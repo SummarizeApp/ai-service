@@ -1,0 +1,40 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/*
+*.py[cod]
+*.pyo
+
+# Virtual Environment
+venv/
+env/
+
+# Data
+datasets/
+
+# Model files
+models/
+
+# Python egg files
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Logs and temporary files
+*.log
+*.tmp
+*.swp
+*.swo
+
+# VSCode settings
+.vscode/
+*.code-workspace
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDE-specific files
+.idea/
+*.iml
+
+./models/model/model.safetensors
