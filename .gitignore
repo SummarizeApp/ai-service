@@ -38,4 +38,3 @@ Thumbs.db
 *.iml
 
 ./models/model/model.safetensors
-
