@@ -8,20 +8,20 @@ def summarize():
     try:
         data = request.get_json()
         if not data or 'text' not in data:
-            return jsonify({'error': 'Geçersiz giriş: "text" anahtarı eksik'}), 400
+            return jsonify({'status': 'error', 'message': 'Geçersiz giriş: "text" anahtarı eksik'}), 400
         
         text = data.get('text', '')
         if not text:
-            return jsonify({'error': 'Geçersiz giriş: "text" değeri boş'}), 400
+            return jsonify({'status': 'error', 'message': 'Geçersiz giriş: "text" değeri boş'}), 400
         
         try:
             summary = summarize_with_model(text)
         except Exception as e:
-            return jsonify({'error': f'Özetleme sırasında hata oluştu: {e}'}), 500
+            return jsonify({'status': 'error', 'message': f'Özetleme sırasında hata oluştu: {e}'}), 500
         
-        return jsonify({'summary': summary})
+        return jsonify({'status': 'success', 'summary': summary}), 200
     except Exception as e:
-        return jsonify({'error': f'Beklenmeyen bir hata oluştu: {e}'}), 500
+        return jsonify({'status': 'error', 'message': f'Beklenmeyen bir hata oluştu: {e}'}), 500
 
 if __name__ == "__main__":
     try:
