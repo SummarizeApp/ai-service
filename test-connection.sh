@@ -8,7 +8,7 @@ read -r -d '' DATA << EOM
 }
 EOM
 
-CONCURRENT_REQUESTS=15
+CONCURRENT_REQUESTS=2
 
 make_request() {
     START=$(date +%s.%N)
