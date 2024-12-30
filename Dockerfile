@@ -1,19 +1,19 @@
-FROM python:3.12.6-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
-    build-essential \
-    libgl1-mesa-glx \
-    && apt-get clean \
+    curl \
+    git \
     && rm -rf /var/lib/apt/lists/*
 
-# Proje dosyalarını ve requirements.txt'yi kopyala
-COPY . /app
-COPY requirements.txt /app/requirements.txt
+COPY setup.sh .
+RUN chmod +x setup.sh
 
-# Pip'i güncelle ve bağımlılıkları yükle
-RUN python3.12 -m pip install --upgrade pip
-RUN python3.12 -m pip install --no-cache-dir -r requirements.txt
+RUN bash setup.sh
 
-CMD ["python3.12", "app.py"]
+ENV PATH="/app/venv/bin:$PATH"
+
+COPY . .
+
+CMD ["python3", "app.py"]
