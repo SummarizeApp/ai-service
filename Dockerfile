@@ -1,4 +1,4 @@
-FROM python:3.10-slim
+FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
 
 WORKDIR /app
 
@@ -7,13 +7,11 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-COPY setup.sh .
-RUN chmod +x setup.sh
-
-RUN bash setup.sh
-
-ENV PATH="/app/venv/bin:$PATH"
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
+
+EXPOSE 5000
 
 CMD ["python3", "app.py"]
