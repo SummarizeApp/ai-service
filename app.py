@@ -1,32 +1,18 @@
 from flask import Flask, request, jsonify
 from src.utils.summarize import summarize_with_model
+from src.utils.summarizer import TextSummarizer
+from src.utils.metrics import MetricsCollector
 from src.logger import setup_logger
 
-from prometheus_client import Gauge, start_http_server
-import psutil
-import pynvml
-
 app = Flask(__name__)
-
 logger = setup_logger("flask-app", "logs/app.log")
 
-cpu_usage_gauge = Gauge('ai_cpu_usage', 'CPU usage by AI service')
-gpu_usage_gauge = Gauge('ai_gpu_usage', 'GPU usage by AI service')
-
-start_http_server(8000)
-pynvml.nvmlInit()
+metrics_collector = MetricsCollector(port=8000)
+text_summarizer = TextSummarizer()
 
 @app.before_request
 def track_usage():
-    cpu_usage = psutil.cpu_percent(interval=0.1)
-    cpu_usage_gauge.set(cpu_usage)
-
-    try:
-        handle = pynvml.nvmlDeviceGetHandleByIndex(0)
-        gpu_utilization = pynvml.nvmlDeviceGetUtilizationRates(handle).gpu
-        gpu_usage_gauge.set(gpu_utilization)
-    except pynvml.NVMLError as e:
-        logger.warning(f"GPU kullanım bilgisi alınamadı: {e}")
+    metrics_collector.track_usage()
 
 @app.route('/summarize', methods=['POST'])
 def summarize():
@@ -35,33 +21,37 @@ def summarize():
         if not data or 'text' not in data:
             logger.warning('Invalid input: Missing "text" key')
             return jsonify({'status': 'error', 'message': 'Geçersiz giriş: "text" anahtarı eksik'}), 400
-        
+
         text = data.get('text', '')
         if not text:
             logger.warning('Invalid input: Empty "text" value')
             return jsonify({'status': 'error', 'message': 'Geçersiz giriş: "text" değeri boş'}), 400
-        
-        initial_cpu = psutil.cpu_percent(interval=None)
-        initial_gpu = pynvml.nvmlDeviceGetUtilizationRates(pynvml.nvmlDeviceGetHandleByIndex(0)).gpu
+
+        initial_cpu, initial_gpu = metrics_collector.get_resource_usage()
 
         try:
-            summary = summarize_with_model(text)
+            if len(text) > 400:
+                summary = text_summarizer.summarize_with_tfidf(text)
+                method = "tf-idf + graph"
+            else:
+                summary = summarize_with_model(text)
+                method = "transformer"
         except Exception as e:
             logger.error(f'Summary generation error: {e}', exc_info=True)
             return jsonify({'status': 'error', 'message': f'Özetleme sırasında hata oluştu: {e}'}), 500
-        
-        
-        final_cpu = psutil.cpu_percent(interval=None)
-        final_gpu = pynvml.nvmlDeviceGetUtilizationRates(pynvml.nvmlDeviceGetHandleByIndex(0)).gpu
 
+        final_cpu, final_gpu = metrics_collector.get_resource_usage()
         cpu_used = final_cpu - initial_cpu
         gpu_used = final_gpu - initial_gpu
 
         logger.info(f"CPU Kullanımı: {cpu_used}%, GPU Kullanımı: {gpu_used}%")
-                
-        logger.info('Summary generated successfully')
+        logger.info(f'Summary generated successfully using {method} method')
 
-        return jsonify({'status': 'success', 'summary': summary}), 200
+        return jsonify({
+            'status': 'success', 
+            'summary': summary,
+            'method': method
+        }), 200
     
     except Exception as e:
         logger.critical(f'Unexpected error: {e}', exc_info=True)

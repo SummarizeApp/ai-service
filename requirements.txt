@@ -6,3 +6,8 @@ sentencepiece
 pynvml
 psutil
 prometheus-client 
+scikit-learn
+stanza 
+numpy 
+pandas 
+networkx

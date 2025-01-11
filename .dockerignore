@@ -34,7 +34,7 @@ ENV/
 # Git
 .git
 .gitignore
-
+.models/model-eski/*
 # Logs
 *.log
 
