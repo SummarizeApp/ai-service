@@ -1,5 +1,4 @@
 from flask import Flask, request, jsonify
-from src.utils.summarize import summarize_with_model
 from src.utils.summarizer import TextSummarizer
 from src.utils.metrics import MetricsCollector
 from src.logger import setup_logger
@@ -9,6 +8,9 @@ logger = setup_logger("flask-app", "logs/app.log")
 
 metrics_collector = MetricsCollector(port=8000)
 text_summarizer = TextSummarizer()
+
+def count_words(text):
+    return len(text.split())
 
 @app.before_request
 def track_usage():
@@ -30,11 +32,14 @@ def summarize():
         initial_cpu, initial_gpu = metrics_collector.get_resource_usage()
 
         try:
-            if len(text) > 400:
+            word_count = count_words(text)
+            logger.info(f"Input text word count: {word_count}")
+            
+            if word_count > 400:
                 summary = text_summarizer.summarize_with_tfidf(text)
                 method = "tf-idf + graph"
             else:
-                summary = summarize_with_model(text)
+                summary = text_summarizer.summarize_with_model(text)
                 method = "transformer"
         except Exception as e:
             logger.error(f'Summary generation error: {e}', exc_info=True)

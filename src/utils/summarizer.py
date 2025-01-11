@@ -3,12 +3,25 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 import networkx as nx
 from ..logger import setup_logger
+from src.model.load_model import model, tokenizer
+from src.config import device
 
 logger = setup_logger("summarizer", "logs/summarizer.log")
 
 class TextSummarizer:
     def __init__(self):
         self.nlp = stanza.Pipeline('tr')
+        
+    def summarize_with_model(self, input_text):
+        try:
+            inputs = tokenizer(input_text, return_tensors="pt", truncation=True, padding=True, max_length=4096)
+            inputs = {key: value.to(device) for key, value in inputs.items()}
+            outputs = model.generate(**inputs, max_length=1024, num_beams=4, early_stopping=True)
+            summary = tokenizer.decode(outputs[0], skip_special_tokens=True)
+            return summary
+        except Exception as e:
+            logger.error(f"Error in model summarization: {e}", exc_info=True)
+            raise
         
     def stanza_sentence_split(self, text):
         doc = self.nlp(text)
